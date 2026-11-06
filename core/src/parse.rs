@@ -2,6 +2,18 @@ use tree_sitter::{Node, Parser};
 
 use crate::models::Symbol;
 
+pub struct RawImport {
+    pub file: String,
+    pub module: String,
+    pub level: usize,
+    pub line: usize,
+}
+
+pub struct ParsedFile {
+    pub symbols: Vec<Symbol>,
+    pub imports: Vec<RawImport>,
+}
+
 pub fn new_parser() -> Result<Parser, tree_sitter::LanguageError> {
     let mut parser = Parser::new();
     parser.set_language(&tree_sitter_python::LANGUAGE.into())?;
@@ -12,7 +24,7 @@ pub fn parse_python(
     file: &str,
     bytes: &[u8],
     parser: &mut Parser,
-) -> Result<Vec<Symbol>, String> {
+) -> Result<ParsedFile, String> {
     let tree = parser
         .parse(bytes, None)
         .ok_or_else(|| "parser nao retornou arvore".to_string())?;
@@ -23,6 +35,7 @@ pub fn parse_python(
     }
 
     let mut symbols = Vec::new();
+    let mut imports = Vec::new();
 
     let mut cursor = root.walk();
     for child in root.named_children(&mut cursor) {
@@ -56,12 +69,40 @@ pub fn parse_python(
                     }
                 }
             }
+            "import_statement" => {
+                let mut import_cursor = child.walk();
+                for item in child.named_children(&mut import_cursor) {
+                    let target = if item.kind() == "aliased_import" {
+                        item.child_by_field_name("name").unwrap_or(item)
+                    } else {
+                        item
+                    };
+                    imports.push(RawImport {
+                        file: file.to_string(),
+                        module: text(target, bytes),
+                        level: 0,
+                        line: child.start_position().row + 1,
+                    });
+                }
+            }
+            "import_from_statement" => {
+                if let Some(module_node) = child.child_by_field_name("module_name") {
+                    let raw = text(module_node, bytes);
+                    let level = raw.chars().take_while(|c| *c == '.').count();
+                    imports.push(RawImport {
+                        file: file.to_string(),
+                        module: raw[level..].to_string(),
+                        level,
+                        line: child.start_position().row + 1,
+                    });
+                }
+            }
             _ => {}
         }
     }
 
     symbols.sort_by(|a, b| (&a.id, a.line).cmp(&(&b.id, b.line)));
-    Ok(symbols)
+    Ok(ParsedFile { symbols, imports })
 }
 
 fn push_symbol(
@@ -104,5 +145,28 @@ fn unwrap_decorated(node: Node<'_>) -> Node<'_> {
         node.child_by_field_name("definition").unwrap_or(node)
     } else {
         node
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extrai_imports_absolutos_e_relativos() {
+        let src = b"import os, sys\nimport pkg.sub as ps\nfrom .util import x\nfrom ..core import y\n";
+        let mut parser = new_parser().unwrap();
+        let out = parse_python("pkg/app.py", src, &mut parser).unwrap();
+
+        let got: Vec<(&str, usize)> = out
+            .imports
+            .iter()
+            .map(|i| (i.module.as_str(), i.level))
+            .collect();
+
+        assert_eq!(
+            got,
+            vec![("os", 0), ("sys", 0), ("pkg.sub", 0), ("util", 1), ("core", 2)]
+        );
     }
 }
