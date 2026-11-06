@@ -51,8 +51,9 @@ Trilha de execução por commits. O design canônico está em
 
 25. `feat(py): cache por hash de graph.json + repo_hash`
 26. `feat(py): incremental por módulo`
-27. `feat(core): --jobs + rayon (parse paralelo)`
-28. ✅ Checkpoint: 2ª execução sem mudanças = zero chamadas LLM.
+27. `feat(core): scan respeita .gitignore de verdade (crate ignore)`
+28. `feat(core): --jobs + rayon (parse paralelo)`
+29. ✅ Checkpoint: 2ª execução sem mudanças = zero chamadas LLM.
 
 ## Bloco G — Extensão (P5)
 
