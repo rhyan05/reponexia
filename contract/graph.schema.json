@@ -54,6 +54,37 @@
         },
         "additionalProperties": false
       }
+    },
+    "symbols":{
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "file", "name", "kind", "line", "exported"],
+        "properties": {
+          "id": { "type": "string" },
+          "file": { "type": "string" },
+          "name": { "type": "string" },
+          "kind": { "type": "string", "enum": ["function", "class", "method"] },
+          "line": { "type": "integer", "minimum": 1 },
+          "exported": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges":{
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "kind", "line"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "kind": { "type": "string", "enum": ["import", "call", "extends", "implements"] },
+          "symbol": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": true
