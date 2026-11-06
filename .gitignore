@@ -1,0 +1,19 @@
+# Rust — build do core
+/core/target/
+
+# Python — bytecode, venv e artefatos de build
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Saída do RepoNexia no repo analisado
+.reponexia/
+
+# Documentos antigos (mantidos localmente, fora do histórico)
+docs/*_historico.md
+
+# Segredos
+.env
