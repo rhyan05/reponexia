@@ -2,6 +2,7 @@ mod models;
 mod scan;
 mod parse;
 mod resolve;
+mod analyze;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -94,6 +95,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
     files.sort_by(|a, b| a.path.cmp(&b.path));
     symbols.sort_by(|a, b| (&a.id, a.line).cmp(&(&b.id, b.line)));
     let edges = resolve::resolve_imports(&files, &raw_imports);
+    let metrics = analyze::compute_metrics(&files, &edges);
 
     let mut languages: Vec<String> = files.iter().map(|f| f.language.clone()).collect();
     languages.sort();
@@ -120,6 +122,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
         warnings,
         symbols,
         edges,
+        metrics,
     })
 }
 

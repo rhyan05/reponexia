@@ -10,6 +10,7 @@ pub struct Graph {
     pub warnings: Vec<Warning>,
     pub symbols: Vec<Symbol>,
     pub edges: Vec<Edge>,
+    pub metrics: Vec<Metric>,
 }
 
 #[derive(Serialize)]
@@ -46,4 +47,12 @@ pub struct Edge {
     pub line: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub symbol: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct Metric {
+    pub path: String,
+    pub fan_in: usize,
+    pub fan_out: usize,
+    pub page_rank: f64,
 }

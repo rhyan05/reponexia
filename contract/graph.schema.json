@@ -85,6 +85,20 @@
         },
         "additionalProperties": false
       }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "fan_in", "fan_out", "page_rank"],
+        "properties": {
+          "path": { "type": "string" },
+          "fan_in": { "type": "integer", "minimum": 0 },
+          "fan_out": { "type": "integer", "minimum": 0 },
+          "page_rank": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": true
