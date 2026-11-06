@@ -26,6 +26,7 @@ pub fn parse_python(
 
     let mut cursor = root.walk();
     for child in root.named_children(&mut cursor) {
+        let child = unwrap_decorated(child);
         match child.kind() {
             "function_definition" => {
                 push_symbol(&mut symbols, file, bytes, child, "function", None);
@@ -42,6 +43,7 @@ pub fn parse_python(
                 };
                 let mut body_cursor = body.walk();
                 for item in body.named_children(&mut body_cursor) {
+                    let item = unwrap_decorated(item);
                     if item.kind() == "function_definition" {
                         push_symbol(
                             &mut symbols,
@@ -95,4 +97,12 @@ fn push_symbol(
 
 fn text(node: Node<'_>, bytes: &[u8]) -> String {
     node.utf8_text(bytes).unwrap_or("").to_string()
+}
+
+fn unwrap_decorated(node: Node<'_>) -> Node<'_> {
+    if node.kind() == "decorated_definition" {
+        node.child_by_field_name("definition").unwrap_or(node)
+    } else {
+        node
+    }
 }
