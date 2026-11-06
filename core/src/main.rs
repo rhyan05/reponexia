@@ -1,5 +1,6 @@
 mod models;
 mod scan;
+mod parse;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -45,8 +46,11 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
     let mut paths = scan::collect_files(&root);
     paths.sort();
 
+    let mut parser = parse::new_parser()?;
     let mut files = Vec::new();
     let mut warnings = Vec::new();
+    let mut symbols = Vec::new();
+    let edges = Vec::new();
 
     for path in paths {
         let Ok(rel) = path.strip_prefix(&root) else {
@@ -56,9 +60,21 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
 
         match fs::read(&path) {
             Ok(bytes) => {
+                let language = language_of(&path);
+
+                if language == "python" {
+                    match parse::parse_python(&rel, &bytes, &mut parser) {
+                        Ok(found) => symbols.extend(found),
+                        Err(message) => warnings.push(Warning {
+                            message,
+                            path: Some(rel.clone()),
+                        }),
+                    }
+                }
+
                 files.push(FileEntry {
                     path: rel,
-                    language: language_of(&path).to_string(),
+                    language: language.to_string(),
                     loc: count_lines(&bytes),
                     hash: sha256_hex(&bytes),
                     parse_errors: Vec::new(),
@@ -72,6 +88,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
     }
 
     files.sort_by(|a, b| a.path.cmp(&b.path));
+    symbols.sort_by(|a, b| (&a.id, a.line).cmp(&(&b.id, b.line)));
 
     let mut languages: Vec<String> = files.iter().map(|f| f.language.clone()).collect();
     languages.sort();
@@ -96,6 +113,8 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
         languages,
         files,
         warnings,
+        symbols,
+        edges,
     })
 }
 
@@ -128,3 +147,5 @@ fn sha256_hex(bytes: &[u8]) -> String {
 fn to_hex(bytes: impl AsRef<[u8]>) -> String {
     bytes.as_ref().iter().map(|b| format!("{b:02x}")).collect()
 }
+
+

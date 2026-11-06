@@ -8,6 +8,8 @@ pub struct Graph {
     pub languages: Vec<String>,
     pub files: Vec<FileEntry>,
     pub warnings: Vec<Warning>,
+    pub symbols: Vec<Symbol>,
+    pub edges: Vec<Edge>,
 }
 
 #[derive(Serialize)]
@@ -24,4 +26,24 @@ pub struct Warning {
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub path: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct Symbol {
+    pub id: String,
+    pub file: String,
+    pub name: String,
+    pub kind: String,
+    pub line: usize,
+    pub exported: bool,
+}
+
+#[derive(Serialize)]
+pub struct Edge {
+    pub from: String,
+    pub to: String,
+    pub kind: String,
+    pub line: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<String>,
 }
