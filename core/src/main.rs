@@ -1,6 +1,7 @@
 mod models;
 mod scan;
 mod parse;
+mod resolve;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -50,7 +51,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
     let mut files = Vec::new();
     let mut warnings = Vec::new();
     let mut symbols = Vec::new();
-    let edges = Vec::new();
+    let mut raw_imports = Vec::new();
 
     for path in paths {
         let Ok(rel) = path.strip_prefix(&root) else {
@@ -64,7 +65,10 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
 
                 if language == "python" {
                     match parse::parse_python(&rel, &bytes, &mut parser) {
-                        Ok(found) => symbols.extend(found),
+                        Ok(out) => {
+                            symbols.extend(out.symbols);
+                            raw_imports.extend(out.imports);
+                        }
                         Err(message) => warnings.push(Warning {
                             message,
                             path: Some(rel.clone()),
@@ -89,6 +93,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
 
     files.sort_by(|a, b| a.path.cmp(&b.path));
     symbols.sort_by(|a, b| (&a.id, a.line).cmp(&(&b.id, b.line)));
+    let edges = resolve::resolve_imports(&files, &raw_imports);
 
     let mut languages: Vec<String> = files.iter().map(|f| f.language.clone()).collect();
     languages.sort();
