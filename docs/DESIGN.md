@@ -65,7 +65,6 @@ recusa rodar com major diferente do esperado.
 {
   "schema_version": "1.0",
   "root": "/abs/path",
-  "generated_at": "2026-11-06T12:00:00Z",
   "repo_hash": "sha256:...",           // hash do hash de todos os arquivos
   "languages": ["python", "typescript"],
   "files": [
@@ -127,7 +126,8 @@ recusa rodar com major diferente do esperado.
 Regras do contrato:
 
 - **Determinístico:** ordenação estável de `files`, `symbols`, `edges`,
-  `modules` para permitir diff e cache por hash.
+  `modules` para permitir diff e cache por hash. O contrato **não tem
+  timestamp** (`generated_at`): proveniência é dada por `repo_hash` + commit.
 - **Sem código-fonte:** só metadados estruturais. Snippets são lidos pelo Python
   diretamente do disco, somente quando necessário.
 - **Tolerante a falha:** arquivo que não parseia entra em `warnings`, não

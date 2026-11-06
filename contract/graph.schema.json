@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://reponexia.dev/contract/graph.schema.json",
+  "title": "RepoNexia graph",
+  "description": "Contrato entre o motor Rust e o orquestrador Python. Versão 1.0.",
+  "type": "object",
+  "required": ["schema_version", "root", "files"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "root": {
+      "type": "string",
+      "description": "Raiz absoluta do repositório analisado."
+    },
+    "repo_hash": {
+      "type": "string",
+      "description": "Hash do hash de todos os arquivos. Permite cache O(1)."
+    },
+    "languages": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "language", "loc", "hash"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Caminho relativo à raiz, sempre com '/' como separador."
+          },
+          "language": { "type": "string" },
+          "loc": { "type": "integer", "minimum": 0 },
+          "hash": { "type": "string" },
+          "parse_errors": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "path": { "type": "string" },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": true
+}

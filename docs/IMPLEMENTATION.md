@@ -12,8 +12,9 @@ Trilha de execução por commits. O design canônico está em
 1. `chore: init repo, README esqueleto, .gitignore`
 2. `feat(core): clap + comando index que só lista arquivos (sem parse)`
 3. `feat(contract): graph.schema.json v1.0 (mínimo: files, warnings)`
-4. `feat(py): core_runner chama o binário e imprime JSON cru`
-5. ✅ Checkpoint: `reponexia map <path>` mostra a lista de arquivos do repo alvo.
+4. `feat(core): serde + emite graph.json (files, warnings) no stdout`
+5. `feat(py): core_runner chama o binário e imprime JSON cru`
+6. ✅ Checkpoint: `reponexia map <path>` mostra a lista de arquivos do repo alvo.
 
 ## Bloco B — Parse de uma linguagem (início do P1)
 
