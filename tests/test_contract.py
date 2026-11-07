@@ -19,10 +19,12 @@ VALID = {
 }
 
 
+# Testa se o grafo mínimo válido passa na validação
 def test_grafo_minimo_valido():
     validate(VALID)
 
 
+# Testa se o grafo com um campo obrigatório ausente levanta um ContractError
 def test_campo_obrigatorio_ausente():
     graph = copy.deepcopy(VALID)
     del graph["root"]
@@ -30,6 +32,7 @@ def test_campo_obrigatorio_ausente():
         validate(graph)
 
 
+# Testa se uma versão major diferente falha na validação
 def test_major_de_schema_errado():
     graph = copy.deepcopy(VALID)
     graph["schema_version"] = "2.0"
