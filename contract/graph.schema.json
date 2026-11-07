@@ -99,6 +99,19 @@
         },
         "additionalProperties": false
       }
+    },
+    "entry_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "kind", "evidence"],
+        "properties": {
+          "path": { "type": "string" },
+          "kind": { "type": "string", "enum": ["main", "bin", "console_script","package_main"] },
+          "evidence": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": true

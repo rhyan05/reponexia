@@ -3,6 +3,7 @@ mod scan;
 mod parse;
 mod resolve;
 mod analyze;
+mod entrypoints;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -53,6 +54,8 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
     let mut warnings = Vec::new();
     let mut symbols = Vec::new();
     let mut raw_imports = Vec::new();
+    let mut entry_points = Vec::new();
+    let mut raw_script_imports = Vec::new();
 
     for path in paths {
         let Ok(rel) = path.strip_prefix(&root) else {
@@ -76,6 +79,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
                         }),
                     }
                 }
+                entrypoints::detect(&rel, &bytes, &mut entry_points, &mut raw_script_imports);
 
                 files.push(FileEntry {
                     path: rel,
@@ -96,6 +100,8 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
     symbols.sort_by(|a, b| (&a.id, a.line).cmp(&(&b.id, b.line)));
     let edges = resolve::resolve_imports(&files, &raw_imports);
     let metrics = analyze::compute_metrics(&files, &edges);
+    entrypoints::resolve_script_imports(&files, &raw_script_imports, &mut entry_points);
+    let entry_points = entrypoints::dedupe(entry_points);
 
     let mut languages: Vec<String> = files.iter().map(|f| f.language.clone()).collect();
     languages.sort();
@@ -123,6 +129,7 @@ fn build_graph(input: &Path) -> Result<Graph, Box<dyn std::error::Error>> {
         symbols,
         edges,
         metrics,
+        entry_points,
     })
 }
 

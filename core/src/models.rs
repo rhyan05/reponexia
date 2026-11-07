@@ -11,6 +11,7 @@ pub struct Graph {
     pub symbols: Vec<Symbol>,
     pub edges: Vec<Edge>,
     pub metrics: Vec<Metric>,
+    pub entry_points: Vec<Entrypoint>,
 }
 
 #[derive(Serialize)]
@@ -55,4 +56,11 @@ pub struct Metric {
     pub fan_in: usize,
     pub fan_out: usize,
     pub page_rank: f64,
+}
+
+#[derive(Serialize)]
+pub struct Entrypoint {
+    pub path: String,
+    pub kind: String,
+    pub evidence: String,
 }
