@@ -6,6 +6,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from .contract import validate
+
 
 class CoreNotFound(RuntimeError):
     pass
@@ -33,7 +35,7 @@ def find_core() -> Path:
         "ou defina a variável REPONEXIA_CORE."
     )
 
-
+# Faz a indexação do path usando o core e retorna o grafo resultante
 def index(path: str | Path) -> dict:
     core = find_core()
     proc = subprocess.run(
@@ -42,4 +44,8 @@ def index(path: str | Path) -> dict:
         check=True,
     )
     stdout = proc.stdout.decode("utf-8", errors="replace")
-    return json.loads(stdout)
+    graph = json.loads(stdout)
+
+    # Valida o grafo retornado pelo core contra o contrato
+    validate(graph)
+    return graph

@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 
+from .contract import ContractError
 from .core_runner import CoreNotFound, index
 
 
@@ -21,7 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "map":
         try:
             graph = index(args.path)
-        except CoreNotFound as err:
+        except (CoreNotFound, ContractError) as err:
             print(err, file=sys.stderr)
             return 1
         print(json.dumps(graph, indent=2))
