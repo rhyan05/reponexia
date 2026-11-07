@@ -31,6 +31,12 @@ def test_explain_dry_run_grava_onboarding(tmp_path, monkeypatch):
     assert out.read_text(encoding="utf-8").startswith("# Onboarding: repo")
     assert b"\r\n" not in out.read_bytes()
 
+    # O grafo Mermaid também deve ser gerado, em UTF-8 e com LF
+    mmd = target / ".reponexia" / "architecture.mmd"
+    assert mmd.exists()
+    assert mmd.read_text(encoding="utf-8").startswith("graph LR")
+    assert b"\r\n" not in mmd.read_bytes()
+
 
 # Testa se o comando sem --dry-run falha sem tocar no core nem criar a pasta
 def test_explain_sem_dry_run_falha(tmp_path, monkeypatch):

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .contract import ContractError
 from .core_runner import CoreNotFound, index
-from .render import render_markdown
+from .render import render_markdown, render_mermaid
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -67,7 +67,13 @@ def main(argv: list[str] | None = None) -> int:
         with out_file.open("w", encoding="utf-8", newline="\n") as file:
             file.write(render_markdown(graph))
 
+        # Grava também o grafo Mermaid das dependências
+        mmd_file = out_dir / "architecture.mmd"
+        with mmd_file.open("w", encoding="utf-8", newline="\n") as file:
+            file.write(render_mermaid(graph))
+
         print(f"onboarding gerado em {out_file}")
+        print(f"arquitetura gerada em {mmd_file}")
         return 0
 
     return 1
