@@ -3,6 +3,7 @@
 
 # Python — bytecode, venv e artefatos de build
 __pycache__/
+.pytest_cache/
 *.py[cod]
 .venv/
 dist/

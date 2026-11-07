@@ -46,7 +46,13 @@ fn main_guard_line(bytes: &[u8]) -> Option<usize> {
     // ponytail: heuristica textual; trocar por AST (if_statement) se der falso positivo
     let text = String::from_utf8_lossy(bytes);
     text.lines()
-        .position(|line| line.contains("__name__") && line.contains("__main__"))
+        .position(|line| {
+            let trimmed = line.trim();
+            trimmed.starts_with("if")
+                && trimmed.contains("__name__")
+                && trimmed.contains("__main__")
+                && trimmed.ends_with(':')
+        })
         .map(|index| index + 1)
 }
 

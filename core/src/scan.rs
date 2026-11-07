@@ -12,7 +12,7 @@ pub fn collect_files(root: &Path) -> Vec<PathBuf> {
             };
             if ft.is_dir(){
                 let name = entry.file_name();
-                if name == ".git" || name == "node_modules" || name == "target" || name == "__pycache__" {
+                if name == ".git" || name == "node_modules" || name == "target" || name == "__pycache__" || name == ".pytest_cache" {
                     continue; // pula a recursão, mas NÃO adiciona ao resultado (é diretório, não arquivo)
                 }
                 files.extend(collect_files(&entry.path())); // recursão para subdiretórios
