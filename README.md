@@ -5,7 +5,7 @@ dependências críticas, e gera um onboarding doc.
 
 Motor em Rust (`reponexia-core`) faz o scan/parse e monta o grafo; o orquestrador
 em Python chama o LLM e renderiza a documentação. A fronteira é um JSON
-versionado (`contract/graph.schema.json`).
+versionado (`src/reponexia/graph.schema.json`).
 
 ## Build e instalação
 

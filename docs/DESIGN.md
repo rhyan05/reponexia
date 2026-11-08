@@ -306,8 +306,8 @@ ProjetoNet/
 │   │   └── skeleton.py        # esqueletização de arquivos grandes
 │   ├── redact.py              # redaction de segredos antes do LLM
 │   ├── render/                # markdown + mermaid
+│   ├── graph.schema.json      # schema do contrato
 │   └── cache.py
-├── contract/graph.schema.json # schema do contrato
 ├── docs/
 │   ├── DESIGN.md              # este documento
 │   ├── IMPLEMENTATION.md      # trilha de commits/checkpoints
@@ -350,7 +350,7 @@ faz parte do MVP.
 
 | Fase | Entrega |
 |------|---------|
-| **P0** | `contract/graph.schema.json` definido + esqueleto do workspace Rust + CLI `index` emitindo JSON mínimo |
+| **P0** | `src/reponexia/graph.schema.json` definido + esqueleto do workspace Rust + CLI `index` emitindo JSON mínimo |
 | **P1** | scan + parse tree-sitter (Python/JS/TS) + grafo + análise + `graph.json` completo |
 | **P2** | CLI Python: `core_runner`, validação do contrato, `explain --dry-run` |
 | **P3** | `LiteLLMSummarizer` + sumarização hierárquica + render `ONBOARDING.md`/`architecture.mmd` |
@@ -363,7 +363,7 @@ Detalhamento em commits: [`IMPLEMENTATION.md`](./IMPLEMENTATION.md).
 
 - `reponexia explain <repo OSS conhecido>` gera `.reponexia/ONBOARDING.md`,
   `.reponexia/architecture.mmd` e `.reponexia/graph.json`.
-- `graph.json` valida contra `contract/graph.schema.json`.
+- `graph.json` valida contra `src/reponexia/graph.schema.json`.
 - Toda referência `arquivo:linha` no onboarding existe no repositório.
 - `reponexia explain --dry-run` produz o esqueleto sem uma única chamada LLM.
 - O core é determinístico: rodar duas vezes no mesmo commit produz JSON

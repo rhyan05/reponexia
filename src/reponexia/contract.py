@@ -18,7 +18,7 @@ def load_schema() -> dict:
     if override:
         path = Path(override)
     else:
-        path = Path(__file__).resolve().parents[2] / "contract" / "graph.schema.json"
+        path = Path(__file__).with_name("graph.schema.json")
 
     if not path.exists():
         raise ContractError(f"schema do contrato nao encontrado em {path}")

@@ -32,6 +32,9 @@ Issues = "https://github.com/rhyan05/reponexia/issues"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+reponexia = ["graph.schema.json"]
+
 [project.optional-dependencies]
 dev = ["pytest"]
 llm = ["litellm"]
