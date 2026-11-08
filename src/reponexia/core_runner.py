@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from .contract import validate
@@ -20,10 +21,19 @@ def find_core() -> Path:
 
     exe = "reponexia-core.exe" if os.name == "nt" else "reponexia-core"
 
+    # 1. Binário instalado pelo pip no mesmo ambiente (Scripts/bin do venv).
+    #    Não depende do PATH estar ativo, o que falha quando o comando é
+    #    chamado por subprocess/serviço.
+    packaged = Path(sys.executable).parent / exe
+    if packaged.exists():
+        return packaged
+
+    # 2. Binário disponível no PATH.
     on_path = shutil.which(exe)
     if on_path:
         return Path(on_path)
 
+    # 3. Build local a partir do código-fonte (modo desenvolvimento).
     root = Path(__file__).resolve().parents[2]
     for profile in ("release", "debug"):
         candidate = root / "core" / "target" / profile / exe
@@ -31,8 +41,8 @@ def find_core() -> Path:
             return candidate
 
     raise CoreNotFound(
-        "reponexia-core não encontrado. Rode `cargo build --release` em core/ "
-        "ou defina a variável REPONEXIA_CORE."
+        "reponexia-core não encontrado. Instale com `pip install ./core`, rode "
+        "`cargo build --release` em core/ ou defina a variável REPONEXIA_CORE."
     )
 
 # Faz a indexação do path usando o core e retorna o grafo resultante

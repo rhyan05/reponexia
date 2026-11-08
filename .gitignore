@@ -9,6 +9,7 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+/core/dist/
 
 # Saída do RepoNexia no repo analisado
 .reponexia/

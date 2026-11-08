@@ -1,0 +1,20 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "reponexia-core"
+version = "0.1.0"
+description = "Motor de analise do RepoNexia (binario)"
+requires-python = ">=3.8"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Rust",
+    "Environment :: Console",
+    "Topic :: Software Development :: Documentation",
+    "Operating System :: OS Independent",
+]
+
+[tool.maturin]
+bindings = "bin"
+strip = true

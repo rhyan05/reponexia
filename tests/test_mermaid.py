@@ -40,3 +40,28 @@ def test_grafo_vazio():
 # Testa se a saída é determinística
 def test_saida_deterministica():
     assert render_mermaid(GRAPH) == render_mermaid(GRAPH)
+
+def test_top_n_por_page_rank_preserva_entry_points():
+    graph = {
+        "files": [],
+        "edges": [
+            {"from": "a.py", "to": "b.py", "kind": "import", "line": 1},
+            {"from": "c.py", "to": "b.py", "kind": "import", "line": 1},
+            {"from": "b.py", "to": "d.py", "kind": "import", "line": 1},
+        ],
+        "entry_points": [
+            {"path": "d.py", "kind": "main", "evidence": "d.py:1"},
+        ],
+        "metrics": [
+            {"path": "a.py", "fan_in": 0, "fan_out": 1, "page_rank": 0.1},
+            {"path": "b.py", "fan_in": 2, "fan_out": 1, "page_rank": 0.5},
+            {"path": "c.py", "fan_in": 0, "fan_out": 1, "page_rank": 0.2},
+            {"path": "d.py", "fan_in": 1, "fan_out": 0, "page_rank": 0.2},
+        ],
+    }
+
+    text = render_mermaid(graph, top_n=1)
+
+    assert "b.py" in text and "d.py" in text
+    assert "a.py" not in text
+    assert "c.py" not in text

@@ -1,13 +1,11 @@
 from __future__ import annotations
-
 from collections import defaultdict
 from pathlib import PurePosixPath
 
-TOP_FILES = 10
+TOP_FILES=10
 
-
-def render_markdown(graph: dict) -> str:
-    sections = [
+def render_markdown(graph:dict, narrative: dict | None = None) -> str:
+    sections=[
         _header(graph),
         _entry_points(graph),
         _top_files(graph),
@@ -15,24 +13,26 @@ def render_markdown(graph: dict) -> str:
         _dependencies(graph),
         _warnings(graph),
     ]
+    # O bloco do LLM é opcional: no --dry-run não existe.
+    if narrative:
+        sections.append(_narrative(narrative))
     return "\n\n".join(section for section in sections if section) + "\n"
-
 
 def _header(graph: dict) -> str:
     name = PurePosixPath(graph["root"]).name or graph["root"]
     languages = ", ".join(graph.get("languages", [])) or "nenhuma"
 
-    lines = [f"# Onboarding: {name}", ""]
-    lines.append(f"- schema: {graph['schema_version']}")
-    if graph.get("repo_hash"):
-        lines.append(f"- repo_hash: {graph['repo_hash'][:12]}")
-    lines.append(f"- linguagens: {languages}")
-    lines.append(f"- arquivos: {len(graph.get('files', []))}")
-    lines.append(f"- símbolos: {len(graph.get('symbols', []))}")
-    lines.append(f"- dependências internas: {len(graph.get('edges', []))}")
-    lines.append(f"- entry points: {len(graph.get('entry_points', []))}")
-    return "\n".join(lines)
-
+    return "\n".join([
+        f"# Onboarding: {name}",
+        "",
+        f"- schema: {graph['schema_version']}",
+        f"- repo_hash: {graph['repo_hash'][:12]}" if graph.get("repo_hash") else "",
+        f"- linguagens: {languages}",
+        f"- arquivos: {len(graph.get('files', []))}",
+        f"- símbolos: {len(graph.get('symbols', []))}",
+        f"- dependências internas: {len(graph.get('edges', []))}",
+        f"- entry points: {len(graph.get('entry_points', []))}",
+    ])
 
 def _entry_points(graph: dict) -> str:
     entries = graph.get("entry_points", [])
@@ -40,19 +40,18 @@ def _entry_points(graph: dict) -> str:
         return ""
 
     lines = ["## Entry points", "", "| path | kind | evidência |", "|---|---|---|"]
-    for entry in sorted(entries, key=lambda item: (item["path"], item["kind"])):
-        lines.append(
-            f"| `{entry['path']}` | {entry['kind']} | `{entry['evidence']}` |"
-        )
+    for entry in sorted(entries, key=lambda e: (e["path"], e["kind"])):
+        lines.append(f"| `{entry['path']}` | {entry['kind']} | `{entry['evidence']}` |")
     return "\n".join(lines)
 
 
+# Mais centrais primeiro, desempate por path.
 def _top_files(graph: dict) -> str:
     metrics = graph.get("metrics", [])
     if not metrics:
         return ""
 
-    top = sorted(metrics, key=lambda item: (-item["page_rank"], item["path"]))[:TOP_FILES]
+    top = sorted(metrics, key=lambda m: (-m["page_rank"], m["path"]))[:TOP_FILES]
 
     lines = [
         "## Arquivos centrais",
@@ -84,7 +83,7 @@ def _modules(graph: dict) -> str:
 
     lines = ["## Módulos"]
     for module in sorted(groups):
-        members = sorted(groups[module], key=lambda item: item["path"])
+        members = sorted(groups[module], key=lambda f: f["path"])
         total_symbols = sum(symbols_by_file[file["path"]] for file in members)
         lines.append("")
         lines.append(
@@ -96,10 +95,12 @@ def _modules(graph: dict) -> str:
     return "\n".join(lines)
 
 
+# Concordância simples para os contadores do cabeçalho de módulo.
 def _count(n: int, singular: str, plural: str) -> str:
     return f"{n} {singular if n == 1 else plural}"
 
 
+# Arestas agrupadas por origem.
 def _dependencies(graph: dict) -> str:
     edges = graph.get("edges", [])
     if not edges:
@@ -113,10 +114,9 @@ def _dependencies(graph: dict) -> str:
     for source in sorted(by_source):
         lines.append("")
         lines.append(f"### `{source}`")
-        for edge in sorted(by_source[source], key=lambda item: (item["to"], item["line"])):
+        for edge in sorted(by_source[source], key=lambda e: (e["to"], e["line"])):
             lines.append(f"- linha {edge['line']} → `{edge['to']}`")
     return "\n".join(lines)
-
 
 def _warnings(graph: dict) -> str:
     warnings = graph.get("warnings", [])
@@ -128,4 +128,17 @@ def _warnings(graph: dict) -> str:
         path = warning.get("path")
         where = f"`{path}`: " if path else ""
         lines.append(f"- {where}{warning['message']}")
+    return "\n".join(lines)
+
+
+# Seções narrativas produzidas pelo LLM (repo + módulos).
+def _narrative(narrative: dict) -> str:
+    lines = ["## Visão geral (LLM)", "", (narrative.get("repo") or "").strip()]
+
+    modules = narrative.get("modules") or {}
+    if modules:
+        lines += ["", "## Módulos (resumo LLM)"]
+        for name in sorted(modules):
+            lines += ["", f"### `{name}`", "", (modules[name] or "").strip()]
+
     return "\n".join(lines)

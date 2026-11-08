@@ -1,19 +1,37 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "reponexia"
 version = "0.1.0"
 description = "CLI que explica um repositório desconhecido"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
-dependencies = ["jsonschema>=4.0"]
+dependencies = [
+    "jsonschema>=4.0",
+    "reponexia-core==0.1.*",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Topic :: Software Development :: Documentation",
+    "Operating System :: OS Independent",
+]
 
 [project.scripts]
 reponexia = "reponexia.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/rhyan05/reponexia"
+Repository = "https://github.com/rhyan05/reponexia"
+Issues = "https://github.com/rhyan05/reponexia/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+llm = ["litellm"]

@@ -1,0 +1,139 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  check-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Versões devem bater nos três manifestos
+        run: |
+          python - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          def version(path):
+              text = pathlib.Path(path).read_text(encoding="utf-8")
+              match = re.search(r'^version\s*=\s*"([^"]+)"', text, re.M)
+              return match.group(1)
+
+          files = ["core/Cargo.toml", "core/pyproject.toml", "pyproject.toml"]
+          versions = {f: version(f) for f in files}
+          if len(set(versions.values())) != 1:
+              sys.exit(f"versoes divergentes: {versions}")
+          print("versao", next(iter(versions.values())))
+          PY
+
+  core-wheels:
+    needs: check-versions
+    name: core ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, manylinux: "off" }
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, manylinux: auto }
+          - { os: macos-13, target: x86_64-apple-darwin, manylinux: "off" }
+          - { os: macos-14, target: aarch64-apple-darwin, manylinux: "off" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build wheel do core
+        uses: PyO3/maturin-action@v1
+        with:
+          command: build
+          working-directory: core
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: core-${{ matrix.target }}
+          path: core/dist/*.whl
+
+  python-dist:
+    needs: check-versions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install build
+      - run: python -m build --sdist --wheel --outdir dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-dist
+          path: dist/*
+
+  source-build:
+    needs: check-versions
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compila core local e instala o pacote
+        run: |
+          python -m pip install ./core
+          python -m pip install -e ".[dev]"
+      - name: Smoke do caminho source
+        run: reponexia map core/tests/fixtures/broken
+      - run: python -m pytest -q
+
+  smoke:
+    needs: [core-wheels, python-dist]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Instala os wheels locais (sem Rust)
+        run: python -m pip install --only-binary reponexia,reponexia-core --find-links dist reponexia
+      - name: O binário do core precisa existir
+        run: reponexia map core/tests/fixtures/broken
+
+  publish:
+    needs: [smoke, source-build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: pypi
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publica no PyPI (Trusted Publishing)
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

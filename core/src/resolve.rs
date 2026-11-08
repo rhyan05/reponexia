@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::path::{Component, Path};
 
 use crate::models::{Edge, FileEntry};
 use crate::parse::RawImport;
@@ -77,10 +78,20 @@ fn resolve_one(
 pub fn resolve_imports(files: &[FileEntry], imports: &[RawImport]) -> Vec<Edge> {
     let index = build_index(files);
     let known: BTreeSet<&str> = files.iter().map(|f| f.path.as_str()).collect();
+    let languages: BTreeMap<&str, &str> = files
+        .iter()
+        .map(|file| (file.path.as_str(), file.language.as_str()))
+        .collect();
 
     let mut edges = Vec::new();
     for raw in imports {
-        let Some(to) = resolve_one(&index, &known, &raw.file, raw) else {
+        let target = match languages.get(raw.file.as_str()) {
+            Some(&lang) if lang == "javascript" || lang == "typescript" => {
+                resolve_js(&raw.file, &raw.module, &known)
+            }
+            _ => resolve_one(&index, &known, &raw.file, raw),
+        };
+        let Some(to) = target else {
             continue;
         };
         if to == raw.file {
@@ -101,6 +112,48 @@ pub fn resolve_imports(files: &[FileEntry], imports: &[RawImport]) -> Vec<Edge> 
 
     edges.sort_by(|a, b| (&a.from, &a.to, a.line).cmp(&(&b.from, &b.to, b.line)));
     edges
+}
+
+// Resolve import relativo de JS/TS ("./x", "../core/y") para um arquivo do repo.
+fn resolve_js(importer: &str, module: &str, known: &BTreeSet<&str>) -> Option<String> {
+    if !(module.starts_with('.') || module.starts_with('/')) {
+        return None; // pacote externo (npm)
+    }
+
+    let parent = Path::new(importer).parent().unwrap_or_else(|| Path::new(""));
+    let base = normalize_path(&parent.join(module))?;
+
+    let mut candidates = vec![base.clone()];
+    for ext in [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"] {
+        candidates.push(format!("{base}{ext}"));
+    }
+    for ext in [".ts", ".tsx", ".js", ".jsx"] {
+        candidates.push(format!("{base}/index{ext}"));
+    }
+
+    candidates
+        .into_iter()
+        .find(|candidate| known.contains(candidate.as_str()))
+}
+
+fn normalize_path(path: &Path) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::Normal(part) => parts.push(part.to_string_lossy().into_owned()),
+            Component::ParentDir => {
+                parts.pop()?;
+            }
+            Component::CurDir => {}
+            Component::RootDir | Component::Prefix(_) => {}
+        }
+    }
+
+    if parts.is_empty() {
+        None
+    } else {
+        Some(parts.join("/"))
+    }
 }
 
 #[cfg(test)]
@@ -203,6 +256,65 @@ mod tests {
             level: 0,
             line: 1,
         }];
+        assert!(resolve_imports(&files, &imports).is_empty());
+    }
+
+    fn script(path: &str, language: &str) -> FileEntry {
+        FileEntry {
+            path: path.to_string(),
+            language: language.to_string(),
+            loc: 1,
+            hash: String::new(),
+            parse_errors: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn resolve_import_relativo_ts() {
+        let files = vec![
+            script("src/app/main.ts", "typescript"),
+            script("src/app/util.ts", "typescript"),
+        ];
+        let imports = vec![RawImport {
+            file: "src/app/main.ts".into(),
+            module: "./util".into(),
+            level: 0,
+            line: 1,
+        }];
+
+        let edges = resolve_imports(&files, &imports);
+        assert_eq!(edges.len(), 1);
+        assert_eq!(edges[0].to, "src/app/util.ts");
+    }
+
+    #[test]
+    fn resolve_import_subindo_js() {
+        let files = vec![
+            script("src/app/sub/main.ts", "typescript"),
+            script("src/app/util.js", "javascript"),
+        ];
+        let imports = vec![RawImport {
+            file: "src/app/sub/main.ts".into(),
+            module: "../util".into(),
+            level: 0,
+            line: 1,
+        }];
+
+        let edges = resolve_imports(&files, &imports);
+        assert_eq!(edges.len(), 1);
+        assert_eq!(edges[0].to, "src/app/util.js");
+    }
+
+    #[test]
+    fn pacote_npm_nao_resolve() {
+        let files = vec![script("src/main.ts", "typescript")];
+        let imports = vec![RawImport {
+            file: "src/main.ts".into(),
+            module: "react".into(),
+            level: 0,
+            line: 1,
+        }];
+
         assert!(resolve_imports(&files, &imports).is_empty());
     }
 }
